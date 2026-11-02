@@ -180,6 +180,74 @@ def testCommitMessageDraftWithInvalidSignatureSavedOnCancel(tempDir, mainWindow)
     dialog.accept()  # Go through with the commit this time
 
 
+def testReuseRecentCommitMessage(tempDir, mainWindow):
+    wd = unpackRepo(tempDir)
+    with RepoContext(wd) as repo:
+        sig = repo.default_signature
+        head = repo.head_commit_id
+        for message in ["summary A\n\ndetails A\n", "R&D\n", "summary A\n\ndetails A\n"]:
+            head = repo.create_commit("HEAD", sig, sig, message, repo.head_tree.id, [head])
+        assert repo.recent_commit_messages(2) == ["summary A\n\ndetails A", "R&D"]
+
+    reposcenario.stagedNewEmptyFile(wd)
+    rw = mainWindow.openRepo(wd)
+    rw.diffArea.commitButton.click()
+    dialog: CommitDialog = findQDialog(rw, "commit")
+    QTest.keyClicks(dialog.ui.summaryEditor, "draft")
+    QTest.keyClicks(dialog.ui.descriptionEditor, "draft details")
+
+    assert not dialog.ui.recentMessagesButton.isHidden()
+    menu = dialog.ui.recentMessagesButton.menu()
+    captions = [action.text() for action in menu.actions()]
+    assert 1 < len(captions) <= 10
+    assert len(captions) == len(set(captions))  # duplicate message listed once
+    assert captions[:2] == ["summary A […]", "R&&D"]  # literal ampersand isn't a mnemonic
+
+    triggerMenuAction(menu, r"summary A")
+    assert dialog.ui.summaryEditor.text() == "summary A"
+    assert dialog.ui.descriptionEditor.toPlainText() == "details A"
+    assert dialog.ui.counterLabel.text() == str(len("summary A"))
+    assert dialog.acceptButton.isEnabled()
+
+    # A message without details clears the previous description
+    menu.actions()[1].trigger()
+    assert dialog.ui.summaryEditor.text() == "R&D"
+    assert dialog.ui.descriptionEditor.toPlainText() == ""
+
+    # The user can still undo and edit the reused message
+    QTest.keySequence(dialog.ui.summaryEditor, "Ctrl+Z")
+    assert dialog.ui.summaryEditor.text() == "summary A"
+    dialog.ui.summaryEditor.end(False)  # undo leaves the restored text selected
+    QTest.keyClicks(dialog.ui.summaryEditor, " edited")
+    assert dialog.getFullMessage() == "summary A edited\n"
+
+    dialog.reject()
+
+
+def testAmendDoesntOfferRecentCommitMessages(tempDir, mainWindow):
+    wd = unpackRepo(tempDir)
+    rw = mainWindow.openRepo(wd)
+    triggerMenuAction(mainWindow.menuBar(), "repo/amend")
+    dialog: CommitDialog = findQDialog(rw, "amend")
+    assert dialog.ui.recentMessagesButton.isHidden()
+    dialog.reject()
+
+
+def testRecentCommitMessagesFiltering(tempDir, mainWindow):
+    wd = unpackRepo(tempDir)
+    with RepoContext(wd) as repo:
+        sig = repo.default_signature
+        head = repo.head_commit_id
+        for message in ["regular\n", "regular", " \n"]:  # same message twice, then a blank one
+            head = repo.create_commit("HEAD", sig, sig, message, repo.head_tree.id, [head])
+        repo.create_commit("HEAD", sig, sig, "merge\n", repo.head_tree.id, [head, repo.head_commit.parent_ids[0]])
+        assert repo.recent_commit_messages(1) == ["regular"]
+        assert repo.recent_commit_messages(10).count("regular") == 1
+
+        repo.set_head("refs/heads/unborn-branch")
+        assert repo.recent_commit_messages(10) == []
+
+
 def testPasteMultilineCommitMessage(tempDir, mainWindow):
     wd = unpackRepo(tempDir)
     reposcenario.stagedNewEmptyFile(wd)

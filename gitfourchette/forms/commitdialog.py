@@ -32,6 +32,7 @@ class CommitDialog(QDialog):
             gpgFlag: bool,
             gpgKey: str,
             hooks: list[str],
+            recentMessages: list[str],
             parent: QWidget):
         super().__init__(parent)
 
@@ -43,7 +44,7 @@ class CommitDialog(QDialog):
         self.ui.gpg.setup(gpgFlag, gpgKey)
         self.ui.hookButton.setup(hooks)
 
-        for button in (self.ui.gpg, self.ui.signoffButton, self.ui.hookButton):
+        for button in (self.ui.gpg, self.ui.signoffButton, self.ui.hookButton, self.ui.recentMessagesButton):
             button.setAutoRaise(True)
 
         self.ui.signatureButton.setIcon(stockIcon("view-visible"))
@@ -86,6 +87,8 @@ class CommitDialog(QDialog):
         self.ui.revealSignature.checkStateChanged.connect(lambda: self.validator.run())
         self.ui.revealSignature.checkStateChanged.connect(lambda: self.refreshSignaturePreview())
 
+        self.setUpRecentMessagesButton(recentMessages)
+
         split = initialText.split('\n', 1)
         if len(split) >= 1:
             self.ui.summaryEditor.setText(split[0].strip())
@@ -106,6 +109,30 @@ class CommitDialog(QDialog):
         packDialog(self)
         self.resize(self.width(), self.minimumSizeHint().height())
 
+    def setUpRecentMessagesButton(self, messages: list[str]):
+        button = self.ui.recentMessagesButton
+        button.setVisible(bool(messages))
+
+        actions = []
+        for message in messages:
+            summary, _junk = messageSummary(message)
+            caption = elide(summary, Qt.TextElideMode.ElideRight, ems=50)
+            actions.append(ActionDef(escamp(caption), lambda m=message: self.useRecentMessage(m)))
+        button.setMenu(ActionDef.makeQMenu(button, actions))
+
+    def useRecentMessage(self, message: str):
+        summary, _sep, details = message.partition('\n')
+        self.replaceMessage(summary.strip(), details.strip())
+        self.ui.summaryEditor.setFocus()
+
+    def replaceMessage(self, summary: str, details: str):
+        # This pushes the new text to each editor's undo stack
+        # (whereas setText clears the undo stack).
+        self.ui.summaryEditor.selectAll()
+        self.ui.summaryEditor.insert(summary)
+        self.ui.descriptionEditor.selectAll()
+        self.ui.descriptionEditor.insertPlainText(details)
+
     def sanitizeLineBreaksInSummary(self, text: str):
         if '\n' not in text:
             return
@@ -118,13 +145,7 @@ class CommitDialog(QDialog):
         summary, details = text.split('\n', 1)
         summary = summary.rstrip()
         details = details.lstrip()
-
-        # This pushes the new text to the QLineEdit's undo stack
-        # (whereas setText clears the undo stack).
-        self.ui.summaryEditor.selectAll()
-        self.ui.summaryEditor.insert(summary)
-        self.ui.descriptionEditor.selectAll()
-        self.ui.descriptionEditor.insertPlainText(details)
+        self.replaceMessage(summary, details)
 
     def updateCounterLabel(self):
         text = self.ui.summaryEditor.text()
