@@ -49,8 +49,6 @@ lint = [
     "types-Pygments",
 ]
 pyqt6 = ["pyqt6"]
-# WARNING: PyQt5 support is deprecated and will be removed soon
-pyqt5 = ["pyqt5"]
 pyside6 = ["PySide6 >= 6.9"]
 mfusepy = ["mfusepy ~= 3.1.0"]  # mount a git tree as FUSE filesystem
 memory-indicator = ["psutil"]

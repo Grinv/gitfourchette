@@ -22,7 +22,7 @@ def run():
                                      epilog="Additional arguments are forwarded to pytest (see: pytest --help).")
     parser.add_argument("--cov", action="store_true", help="produce coverage report")
     parser.add_argument("--visual", action="store_true", help="run tests visually (takes MUCH longer than offscreen!)")
-    parser.add_argument("--qt", default="pyqt6", choices=["pyqt6", "pyside6", "pyqt5"], help="Qt bindings to use (pyqt6 by default)")
+    parser.add_argument("--qt", default="pyqt6", choices=["pyqt6", "pyside6"], help="Qt bindings to use (pyqt6 by default)")
     parser.add_argument("-1", dest="single", action="store_true", help="run a single test at a time (don't use python-xdist)")
     parser.add_argument("--with-network", action="store_true", help="run tests that require network access")
     parser.add_argument("--with-fuse", action="store_true", help="run tests that require FUSE")

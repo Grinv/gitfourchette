@@ -29,7 +29,7 @@ jobs:
       matrix:
         include:
         # Legacy config with no optional dependencies and ancient pygit2
-        - {name: '312-pyqt5-legacy', os: ubuntu-22.04, py: '3.12', qt: pyqt5, downgrade-git: true, skip-fuse: true,
+        - {name: '312-pyqt6-legacy', os: ubuntu-22.04, py: '3.12', qt: pyqt6, downgrade-git: true, skip-fuse: true,
            piptweak: 'pip install pygit2==1.14.1 pygments==2.12 && pip uninstall -y mfusepy' }
         # Semi-legacy configs
         - {name: '312-pyqt6', os: ubuntu-latest, py: '3.12', qt: pyqt6, downgrade-git: true}
@@ -48,7 +48,7 @@ jobs:
       if: ${{ runner.os == 'Linux' }}
       run: |
         sudo apt update
-        sudo apt install ${{ matrix.qt == 'pyqt5' && 'libqt5gui5' || 'libqt6gui6' }}
+        sudo apt install libqt6gui6
 
     - name: Downgrade git
       if: ${{ matrix.downgrade-git }}
