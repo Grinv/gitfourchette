@@ -247,3 +247,19 @@ def testPrefsQtStyleVariantPicker(mainWindow):
 
     accent2 = mainWindow.palette().highlight().color()
     assert accent1 != accent2
+
+
+def testPrefsKeepOtherSettingsOnUnknownEnumValue(mainWindow):
+    prefs = settings.Prefs()
+    prefs.showStatusBar = False
+    prefs.doubleClickFileList = settings.FileListClick.DiffTool
+    prefs.setDirty()
+    path = prefs.write()
+
+    # Simulate a value that this version doesn't know, e.g. after downgrading the app
+    writeFile(path, readTextFile(path).replace('"difftool"', '"some-future-action"'))
+
+    loaded = settings.Prefs()
+    assert loaded.load()
+    assert loaded.doubleClickFileList == settings.FileListClick.Nothing
+    assert loaded.showStatusBar is False
