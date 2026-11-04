@@ -101,7 +101,7 @@ class MergeDriver(QObject):
         if error == QProcess.ProcessError.FailedToStart:
             self.debrief = _("{0} failed to start.", tquo(self.processName))
         else:
-            errorName = str(error) if PYQT5 else error.name
+            errorName = error.name
             self.debrief = _("{0} ran into error {1}.", tquo(self.processName), errorName)
 
         self.flush()

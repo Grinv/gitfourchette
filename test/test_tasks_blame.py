@@ -75,10 +75,10 @@ def blameWindow(tempDir, mainWindow) -> Iterator[BlameWindow]:
     del blameWindow._unitTestRepoWidget
 
     with suppress(RuntimeError):  # The test may have deleted the window already
-        if blameWindow.isVisible():  # Only close if the test hasn't closed the window itself (Qt 5 compat)
+        if blameWindow.isVisible():  # Only close if the test hasn't closed the window itself
             blameWindow.close()
 
-    if QT5 or WINDOWS:  # Qt 5 needs a breather here to actually close window
+    if WINDOWS:  # Windows needs a breather here to actually close window
         QTest.qWait(0)
 
 
@@ -130,7 +130,7 @@ def testOpenBlameFromFileListContextMenu(tempDir, mainWindow, closeKey):
     else:
         QTest.keySequence(blameWindow.textEdit, closeKey)
 
-    if QT5 or WINDOWS:  # Qt 5 needs a breather here to actually close window
+    if WINDOWS:  # Windows needs a breather here to actually close window
         QTest.qWait(0)
 
 
@@ -588,8 +588,6 @@ def testBlameLineByLine(tempDir, mainWindow, scenarioKey):
         assert str(line.commitId).startswith(expectedOid)
 
     blameWindow.close()
-    if QT5:  # Qt 5 needs a breather here to actually close window
-        QTest.qWait(0)
 
 
 def testBlameDeletedFileInWorkdir(tempDir, mainWindow):
@@ -605,8 +603,6 @@ def testBlameDeletedFileInWorkdir(tempDir, mainWindow):
     qteFind(blameWindow.textEdit, "file deleted in working directory", plainText=True)
 
     blameWindow.close()
-    if QT5:  # Qt 5 needs a breather here to actually close window
-        QTest.qWait(0)
 
 
 @pytest.mark.parametrize("method", ["menubar", "context"])
@@ -629,8 +625,6 @@ def testBlameRenamedFileInWorkdir(tempDir, mainWindow, method):
     assert qteFind(blameWindow.textEdit, "On master\nOn master", plainText=True)
 
     blameWindow.close()
-    if QT5:  # Qt 5 needs a breather here to actually close window
-        QTest.qWait(0)
 
 
 def testBlameMissingRevisions(blameWindow):

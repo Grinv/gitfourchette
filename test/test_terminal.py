@@ -55,7 +55,6 @@ def testTerminalPlaceholderTokenMissing(tempDir, mainWindow):
     findQDialog(mainWindow, "settings").reject()
 
 
-@pytest.mark.skipif(QT5, reason="Qt 5 (deprecated) is finicky with this test, but Qt 6 is fine")
 @pytest.mark.skipif(MACOS and not OFFSCREEN, reason="macOS+non offscreen is finicky with this test")
 def testTerminalCommandNotFound(tempDir, mainWindow):
     shim = getTestDataPath("editor-shim.py")

@@ -574,7 +574,7 @@ class PrefsDialog(QDialog):
 
         for enumMember in enumType:
             # PySide6 demotes StrEnum to str when stored with QComboBox.setItemData().
-            # Wrap the value in a tuple to preserve the type. (PyQt5 & PyQt6 do the right thing here)
+            # Wrap the value in a tuple to preserve the type. (PyQt6 does the right thing here)
             data = (enumMember,)
             name = trtables.enum(enumMember)
 

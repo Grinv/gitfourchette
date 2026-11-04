@@ -203,8 +203,7 @@ def testPrefsUserCommandsSyntaxHighlighter(mainWindow):
 
 def testPrefsUserCommandsGuide(mainWindow):
     dlg = GFApplication.instance().openPrefsDialog("language")
-    if not QT5:  # Qt 5 doesn't want to hide the guide button initially, but I don't care about Qt 5
-        assert not dlg.guideButton.isVisible()
+    assert not dlg.guideButton.isVisible()
     dlg.reject()
 
     dlg = GFApplication.instance().openPrefsDialog("commands")

@@ -42,14 +42,10 @@ def showInFolder(path: str):  # pragma: no cover (platform-specific)
         # https://www.freedesktop.org/wiki/Specifications/file-manager-interface
         iface = QDBusInterface("org.freedesktop.FileManager1", "/org/freedesktop/FileManager1")
         if iface.isValid():
-            if PYQT5 or PYQT6:
-                # PyQt5/6 needs the array of strings to be spelled out explicitly.
-                if PYQT5:
-                    stringType = QMetaType.Type.QString
-                else:
-                    stringType = QMetaType.Type.QString.value
+            if PYQT6:
+                # PyQt6 needs the array of strings to be spelled out explicitly.
                 dbusArgs = QDBusArgument()
-                dbusArgs.beginArray(stringType)  # type: ignore[call-overload]  # inaccurate stubs?
+                dbusArgs.beginArray(QMetaType.Type.QString.value)  # type: ignore[call-overload]  # inaccurate stubs?
                 dbusArgs.add(path)
                 dbusArgs.endArray()
             else:
@@ -436,10 +432,7 @@ def makeWidgetShortcut(
 ) -> QShortcut:
     assert keys, "no shortcut keys given"
     shortcut = QShortcut(parent)
-    if QT5:  # pragma: no cover - Only one key per shortcut in Qt 5
-        shortcut.setKey(keys[0])
-    else:
-        shortcut.setKeys(keys)
+    shortcut.setKeys(keys)
     shortcut.setContext(context)
     shortcut.activated.connect(callback)
 

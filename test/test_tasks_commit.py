@@ -381,7 +381,6 @@ def testCommitDialogJumpsToWorkdir(tempDir, mainWindow):
     assert NavLocator.inStaged("a/a1.txt").isSimilarEnoughTo(rw.navLocator)
 
 
-@pytest.mark.skipif(QT5, reason="Qt 5 (deprecated) is flaky here")
 def testCommitDialogCtrlReturn(tempDir, mainWindow):
     wd = unpackRepo(tempDir)
     rw = mainWindow.openRepo(wd)

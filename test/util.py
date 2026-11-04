@@ -843,10 +843,7 @@ def mouseSpecialClick(widget: QWidget, clickType: Literal["middle", "double"], p
 
 
 def postMouseWheelEvent(target: QWidget, angleDelta: int, point=QPoint_zero, modifiers=Qt.KeyboardModifier.NoModifier):
-    if QT5:
-        point = QPoint(point)
-    else:
-        point = QPointF(point)
+    point = QPointF(point)
 
     fakeWheelEvent = QWheelEvent(
         point,

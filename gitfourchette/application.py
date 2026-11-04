@@ -419,10 +419,9 @@ class GFApplication(QApplication):
         QCoreApplication.removeTranslator(self.qtbaseTranslator)
 
         # Load qtbase translator
-        if not QT5:  # Qt 5 doesn't have QLibraryInfo.path
-            qtTranslationsDir = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
-            if self.qtbaseTranslator.load(locale, "qtbase", "_", qtTranslationsDir, ".qm"):
-                QCoreApplication.installTranslator(self.qtbaseTranslator)
+        qtTranslationsDir = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+        if self.qtbaseTranslator.load(locale, "qtbase", "_", qtTranslationsDir, ".qm"):
+            QCoreApplication.installTranslator(self.qtbaseTranslator)
 
     @staticmethod
     def _installGettextTranslator(locale: QLocale):
@@ -442,7 +441,7 @@ class GFApplication(QApplication):
         # generic language file (e.g. 'fr_CA' then 'fr').
         try:
             genericLanguageCode = QLocale.languageToCode(locale.language())
-        except AttributeError:  # pragma: no cover - Compatibility with Qt 5 and pre-Qt 6.3
+        except AttributeError:  # pragma: no cover - Compatibility with pre-Qt 6.3
             genericLanguageCode = languageCode.split("_")[0]
 
         for stem in languageCode, genericLanguageCode:

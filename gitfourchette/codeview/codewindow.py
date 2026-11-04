@@ -143,6 +143,3 @@ class CodeWindow(QWidget):
         CodeWindow._liveWindows.remove(self)
 
         super().closeEvent(event)
-
-        if QT5:  # Qt5 in test mode needs an extra push
-            self.deleteLater()

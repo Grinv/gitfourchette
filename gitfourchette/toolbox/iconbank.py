@@ -131,9 +131,8 @@ def stockIconImgTag(iconId: str, dpr: float = 0) -> str:
 
     size = QSize(16, 16)
 
-    if dpr == 1 or QT5:
+    if dpr == 1:
         # Pre-rendering not necessary for dpr=1
-        # (Qt 5: can't pass devicePixelRatio to QIcon.pixmap())
         src = f"assets:icons/{iconId}"
     else:
         # Pre-render at the given dpr into a temporary PNG file.

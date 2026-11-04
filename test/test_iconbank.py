@@ -8,7 +8,6 @@ from .util import *
 
 
 # Use mainWindow fixture to make sure the temp icon cache is properly reset
-@pytest.mark.skipif(QT5, reason="Qt 5: can't specify devicePixelRatio in QIcon.pixmap()")
 def testStockIconImgTagDpr(mainWindow):
     from gitfourchette.toolbox import iconbank
 

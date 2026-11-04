@@ -30,10 +30,7 @@ _logger = _logging.getLogger(__name__)
 
 _qtBindingOrder = ["pyqt6", "pyside6"]
 
-QT5 = False
-QT6 = False
 PYSIDE6 = False
-PYQT5 = False
 PYQT6 = False
 MACOS = False
 WINDOWS = False
@@ -89,7 +86,7 @@ for _tentative in _qtBindingOrder:
             from PySide6.QtNetwork import *
             from PySide6 import __version__ as QT_BINDING_VERSION
             QT_BINDING = "PySide6"
-            QT6 = PYSIDE6 = True
+            PYSIDE6 = True
         elif _tentative == "pyqt6":
             from PyQt6.QtCore import *
             from PyQt6.QtWidgets import *
@@ -97,7 +94,7 @@ for _tentative in _qtBindingOrder:
             from PyQt6.QtNetwork import *
             QT_BINDING_VERSION = PYQT_VERSION_STR
             QT_BINDING = "PyQt6"
-            QT6 = PYQT6 = True
+            PYQT6 = True
         else:
             _logger.warning(f"Unsupported Qt binding {_tentative}")
 

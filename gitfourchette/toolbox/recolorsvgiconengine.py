@@ -134,10 +134,7 @@ class RecolorSvgIconEngine(QIconEngine):
         renderer.render(painter, rectf)
 
     def pixmap(self, size: QSize, mode: QIcon.Mode, state: QIcon.State):
-        if not QT5:
-            key = f"{self.basePixmapKey},{size.width()},{size.height()},{mode.value},{state.value}"
-        else:  # pragma: no cover
-            key = f"{self.basePixmapKey},{size.width()},{size.height()},{mode},{state}"
+        key = f"{self.basePixmapKey},{size.width()},{size.height()},{mode.value},{state.value}"
         pixmap = QPixmapCache.find(key)
         if pixmap is not None:
             return pixmap

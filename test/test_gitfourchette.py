@@ -528,7 +528,7 @@ def testAboutDialog(mainWindow):
     app = QApplication.instance()
 
     def hover(widget: QWidget, localPoint: QPointF) -> bool:
-        globalPoint = widget.mapToGlobal(localPoint.toPoint() if QT5 else localPoint)
+        globalPoint = widget.mapToGlobal(localPoint)
         event = QMouseEvent(QMouseEvent.Type.MouseMove, localPoint, globalPoint,
                             Qt.MouseButton.NoButton, Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier)
         return app.sendEvent(widget, event)

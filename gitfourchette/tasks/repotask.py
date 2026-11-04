@@ -1287,18 +1287,14 @@ class ProcessWrapper(QObject):
         process = self.process
         assert self._didStart
 
-        if QT5 and process.state() == QProcess.ProcessState.NotRunning:  # pragma: no cover
-            # Qt 5 may enter NotRunning immediately in forceSerial mode
-            pass
-        else:
-            assert process.state() == QProcess.ProcessState.Running
+        assert process.state() == QProcess.ProcessState.Running
 
-            # Attempt synchronous wait
-            if not process.waitForFinished(self.waitForFinishedMaxDelay):
-                # The process is taking a while to finish.
-                # Pause the coroutine until the process exits the Running state.
-                with QSignalConnectContext(process.stateChanged, self.continueCoroutine):
-                    yield FlowControlToken(FlowControlToken.Kind.WaitProcessReady)
+        # Attempt synchronous wait
+        if not process.waitForFinished(self.waitForFinishedMaxDelay):
+            # The process is taking a while to finish.
+            # Pause the coroutine until the process exits the Running state.
+            with QSignalConnectContext(process.stateChanged, self.continueCoroutine):
+                yield FlowControlToken(FlowControlToken.Kind.WaitProcessReady)
 
         assert process.state() != QProcess.ProcessState.Running
         exitCode = process.exitCode()
