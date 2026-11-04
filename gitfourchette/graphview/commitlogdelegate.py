@@ -144,7 +144,6 @@ class CommitLogDelegate(QStyledItemDelegate):
         if settings.prefs.authorDiffAsterisk:
             dateText += "*"
         self.dateMaxWidth = QFontMetrics(self.activeCommitFont).horizontalAdvance(dateText + " ")
-        self.dateMaxWidth = int(self.dateMaxWidth)  # make sure it's an int for pyqt5 compat
 
         self.authorMaxWidth = self.hashCharWidth * MAX_AUTHOR_CHARS.get(settings.prefs.authorDisplayStyle, 16)
 
