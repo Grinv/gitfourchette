@@ -251,7 +251,6 @@ def _enumTable() -> dict[type[Enum], dict[Enum, str]]:
         QtApiNames.Automatic: _p("Qt binding", "Automatic (recommended)"),
         QtApiNames.PySide6: "PySide6",
         QtApiNames.PyQt6: "PyQt6",
-        QtApiNames.PyQt5: "PyQt5"
     }
 
     table[RebaseOp] = {
