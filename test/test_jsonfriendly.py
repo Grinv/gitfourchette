@@ -119,3 +119,20 @@ def testJsonFriendlyPermissiveDeserializationIfDefaultAvailable():
     assert result.foo == 200
     assert result.bar == 1234
     assert version == ""
+
+
+def testJsonFriendlyUnknownEnumValueFallsBackToDefault():
+    import enum
+
+    class Color(enum.StrEnum):
+        Red = "red"
+
+    @dataclasses.dataclass
+    class DeserializeMe:
+        foo: int
+        color: Color = Color.Red
+
+    # e.g. a value that was removed from the enum (such as "pyqt5" in QtApiNames)
+    result, _version = jsonfriendly.fromJson('{"foo": 200, "color": "blue"}', DeserializeMe)
+    assert result.foo == 200
+    assert result.color == Color.Red
