@@ -15,7 +15,7 @@ class DonatePrompt(QDialog):
     MinStartups = 15
     InitialDelay = 60
     PostponeDelay = 90
-    SuggestedAmount = float(3)  # float: for Qt 5 compat (QLocale.toCurrencyString)
+    SuggestedAmount = 3.0
 
     def __init__(self, parent):
         super().__init__(parent)

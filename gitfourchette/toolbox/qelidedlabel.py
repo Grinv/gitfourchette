@@ -36,7 +36,7 @@ class QElidedLabel(QLabel):
         elideMode = self.elideMode()
         metrics = self.fontMetrics()
         margin = self.margin()
-        m = int(metrics.horizontalAdvance('x') / 2 - margin)  # int() for PyQt5 compat
+        m = int(metrics.horizontalAdvance('x') / 2 - margin)  # QRect takes ints
         r = self.contentsRect().adjusted(margin + m,  margin, -(margin + m), -margin)
         width = r.width()
 

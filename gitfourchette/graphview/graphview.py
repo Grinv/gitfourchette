@@ -119,7 +119,7 @@ class GraphView(QListView):
 
         if isLMB and not isShift and not isCtrl:
             self.mousePressEvent(event)  # re-route event as if it were a click event
-            self.scrollTo(self.indexAt(event.pos()))  # mousePressEvent won't scroll to the item on its own
+            self.scrollTo(self.indexAt(event.position().toPoint()))  # mousePressEvent won't scroll to the item on its own
         else:
             super().mouseMoveEvent(event)
 
