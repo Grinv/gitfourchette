@@ -5,16 +5,14 @@
 # -----------------------------------------------------------------------------
 
 """
-PyQt6/PySide6/PyQt5 compatibility layer
+PyQt6/PySide6 compatibility layer
 """
 
 # GitFourchette's preferred Qt binding is PyQt6, but you can use another
 # binding via the QT_API environment variable. Values recognized by QT_API:
 #       pyqt6
 #       pyside6
-#       pyqt5
-# NOTE: PyQt5 support is deprecated and will be removed soon.
-# PySide2 is not supported at all.
+# PyQt5 and PySide2 are not supported.
 #
 # If you're running unit tests, use the PYTEST_QT_API environment variable instead.
 # If you're packaging the app, you may prefer to force a binding via appconsts.py.
@@ -30,7 +28,7 @@ from gitfourchette.appconsts import *
 
 _logger = _logging.getLogger(__name__)
 
-_qtBindingOrder = ["pyqt6", "pyside6", "pyqt5"]
+_qtBindingOrder = ["pyqt6", "pyside6"]
 
 QT5 = False
 QT6 = False
@@ -100,14 +98,6 @@ for _tentative in _qtBindingOrder:
             QT_BINDING_VERSION = PYQT_VERSION_STR
             QT_BINDING = "PyQt6"
             QT6 = PYQT6 = True
-        elif _tentative == "pyqt5" and not TYPE_CHECKING:
-            from PyQt5.QtCore import *
-            from PyQt5.QtWidgets import *
-            from PyQt5.QtGui import *
-            from PyQt5.QtNetwork import *
-            QT_BINDING_VERSION = PYQT_VERSION_STR
-            QT_BINDING = "PyQt5"
-            QT5 = PYQT5 = True
         else:
             _logger.warning(f"Unsupported Qt binding {_tentative}")
 
@@ -157,8 +147,6 @@ HAS_QTEST = False
 with _suppress(ImportError):
     if PYQT6:
         from PyQt6.QtTest import QAbstractItemModelTester, QTest, QSignalSpy
-    elif PYQT5 and not TYPE_CHECKING:
-        from PyQt5.QtTest import QAbstractItemModelTester, QTest, QSignalSpy
     elif PYSIDE6 and not TYPE_CHECKING:
         from PySide6.QtTest import QAbstractItemModelTester, QTest, QSignalSpy
     HAS_QTEST = True
@@ -169,8 +157,6 @@ if FREEDESKTOP:
     with _suppress(ImportError):
         if PYQT6:
             from PyQt6.QtDBus import *
-        elif PYQT5 and not TYPE_CHECKING:
-            from PyQt5.QtDBus import *
         elif PYSIDE6 and not TYPE_CHECKING:
             from PySide6.QtDBus import *
         else:
@@ -182,8 +168,6 @@ try:
         from PyQt6.QtSvg import QSvgRenderer
     elif PYSIDE6 and not TYPE_CHECKING:
         from PySide6.QtSvg import QSvgRenderer
-    elif PYQT5 and not TYPE_CHECKING:
-        from PyQt5.QtSvg import QSvgRenderer
     else:
         raise ImportError("QtSvg")
 except ImportError:
@@ -193,7 +177,7 @@ except ImportError:
 # Patch some holes and incompatibilities in Qt bindings
 
 # Match PyQt signal/slot names with PySide6
-if PYQT5 or PYQT6:
+if PYQT6:
     Signal = pyqtSignal
     SignalInstance = pyqtBoundSignal
     Slot = pyqtSlot
@@ -205,30 +189,11 @@ if PYSIDE6 and not TYPE_CHECKING:
 
     QCommandLineParser.addOptions = _QCommandLineParser_addOptions
 
-    # Unlike PyQt5/6, PySide6's QtWidgets module doesn't export QWIDGETSIZE_MAX
+    # Unlike PyQt6, PySide6's QtWidgets module doesn't export QWIDGETSIZE_MAX
     try:
         _dummy = QWIDGETSIZE_MAX
     except NameError:
         QWIDGETSIZE_MAX = 16777215
-
-if QT5 and not TYPE_CHECKING:
-    # Disable "What's this?" in Qt 5 dialog box title bars (Qt 6 sets this off by default.)
-    QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_DisableWindowContextHelpButton)
-
-    # QMouseEvent.pos() is deprecated in Qt 6, so we don't use it.
-    # Fill in QMouseEvent.position() for Qt 5.
-    def _QMouseEvent_position(self: QMouseEvent) -> QPointF:
-        return QPointF(self.pos())
-
-    QMouseEvent.position = _QMouseEvent_position
-
-    # Some of these QFontDatabase functions became static in Qt 6, but they weren't in Qt 5.
-    _QFontDatabase_families = QFontDatabase.families
-    _QFontDatabase_isFixedPitch = QFontDatabase.isFixedPitch
-    _QFontDatabase_isPrivateFamily = QFontDatabase.isPrivateFamily
-    QFontDatabase.families = lambda *_args, **_kwargs: _QFontDatabase_families(QFontDatabase(), *_args, **_kwargs)
-    QFontDatabase.isFixedPitch = lambda *_args, **_kwargs: _QFontDatabase_isFixedPitch(QFontDatabase(), *_args, **_kwargs)
-    QFontDatabase.isPrivateFamily = lambda *_args, **_kwargs: _QFontDatabase_isPrivateFamily(QFontDatabase(), *_args, **_kwargs)
 
 # Return Consolas as default fixed font instead of Courier New on Windows.
 if WINDOWS:
