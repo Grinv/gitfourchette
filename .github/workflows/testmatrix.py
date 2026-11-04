@@ -38,7 +38,7 @@ class Config:
 
         apt = []
         if self.isLinux():
-            aptPackages = ["libqt5gui5" if self.qt == "pyqt5" else "libqt6gui6"]
+            aptPackages = ["libqt6gui6"]
             if self.downgradeGit:
                 apt.append("sudo apt -q remove git git-man")
                 aptPackages.append("git")
@@ -59,7 +59,7 @@ class Config:
         }
 
 configs = [
-    Config("linux-312-pyqt5-old", "ubuntu-22.04",   "3.12", "pyqt5", fuse=False, downgradeGit=True, prePip="pip install pygit2==1.14.1 pygments==2.12"),
+    Config("linux-312-pyqt6-legacy", "ubuntu-22.04", "3.12", "pyqt6", fuse=False, downgradeGit=True, prePip="pip install pygit2==1.14.1 pygments==2.12"),
     Config("linux-312-pyqt6-old", "ubuntu-24.04",   "3.12", "pyqt6", downgradeGit=True, prePip='pip install "pyqt6<6.6" "pyqt6-qt6<6.6" "pyqt6-sip<13.7" pytest-qt==4.3.1'),
     Config("linux-313-pyqt6",     "ubuntu-26.04",   "3.13", "pyqt6", downgradeGit=True),
     Config("linux-314-pyqt6",     "ubuntu-26.04",   "3.14", "pyqt6"),

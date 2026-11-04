@@ -38,7 +38,7 @@ The `test.py` script is a handy wrapper around `pytest`. Useful arguments to `te
 - `-v`: Show which tests are being run.
 - `-x`: Stop after the first failing test.
 - `-g`: Live logging.
-- `--qt=<value>`: Enforce a specific Qt binding (`pyqt6`, `pyside6` or `pyqt5`).
+- `--qt=<value>`: Enforce a specific Qt binding (`pyqt6` or `pyside6`).
 - `--with-net`: Enable tests that hit the network.
 - `--with-fuse`: Enable tests that need FUSE.
 - `--cov`: Generate HTML coverage report.
@@ -46,13 +46,11 @@ The `test.py` script is a handy wrapper around `pytest`. Useful arguments to `te
 
 Useful environment variables if you're not using `test.py` (typically, to run tests from your IDE):
 - `QT_QPA_PLATFORM`: Can be `offscreen`, `wayland`, `xcb` (X11), among others.
-- `QT_API`: Can be `pyqt6`, `pyside6` or `pyqt5`.
+- `QT_API`: Can be `pyqt6` or `pyside6`.
 
 While you're drafting a test, you may want to **pause the UI so you can inspect its state**. To do this, you can use `pause()` and `pauseDialog()`.
 
 Some tests might reliably pass in offscreen mode only, due to restrictions imposed by Wayland on cursor/window control. That's okay. I only require that the test suite reliably passes in offscreen mode.
-
-Some tests might fail in PyQt5. Try to work around it if you can. Don't sweat it too much; it's okay to disable your feature in Qt 5. The first-class target remains PyQt6 and I plan to remove Qt 5 support eventually.
 
 ## Qt Designer forms (`.ui` files)
 

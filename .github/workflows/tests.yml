@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       # Keep names in sync with testmatrix.py
-      "linux-312-pyqt5-old": {type: boolean, default: false}
+      "linux-312-pyqt6-legacy": {type: boolean, default: false}
       "linux-312-pyqt6-old": {type: boolean, default: false}
       "linux-313-pyqt6"    : {type: boolean, default: false}
       "linux-314-pyqt6"    : {type: boolean, default: false}
