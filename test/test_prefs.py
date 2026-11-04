@@ -161,7 +161,7 @@ def testPrefsRecreateDiffDocument(tempDir, mainWindow):
     assert "<CRLF>" not in rw.diffView.toPlainText()
 
 
-@pytest.mark.skipif(QT6 and QT_BINDING_VERSION_TUPLE < (6, 7), reason="TODO: Qt 6.6?")
+@pytest.mark.skipif(QT_BINDING_VERSION_TUPLE < (6, 7), reason="TODO: Qt 6.6?")
 def testPrefsShowWhitespace(tempDir, mainWindow):
     whitespaceFlags = QTextOption.Flag.ShowTabsAndSpaces
 
@@ -211,8 +211,7 @@ def testPrefsUserCommandsSyntaxHighlighter(mainWindow):
 
 def testPrefsUserCommandsGuide(mainWindow):
     dlg = GFApplication.instance().openPrefsDialog("language")
-    if not QT5:  # Qt 5 doesn't want to hide the guide button initially, but I don't care about Qt 5
-        assert not dlg.guideButton.isVisible()
+    assert not dlg.guideButton.isVisible()
     dlg.reject()
 
     dlg = GFApplication.instance().openPrefsDialog("commands")

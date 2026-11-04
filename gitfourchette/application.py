@@ -427,10 +427,9 @@ class GFApplication(QApplication):
         QCoreApplication.removeTranslator(self.qtbaseTranslator)
 
         # Load qtbase translator
-        if not QT5:  # Qt 5 doesn't have QLibraryInfo.path
-            qtTranslationsDir = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
-            if self.qtbaseTranslator.load(locale, "qtbase", "_", qtTranslationsDir, ".qm"):
-                QCoreApplication.installTranslator(self.qtbaseTranslator)
+        qtTranslationsDir = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+        if self.qtbaseTranslator.load(locale, "qtbase", "_", qtTranslationsDir, ".qm"):
+            QCoreApplication.installTranslator(self.qtbaseTranslator)
 
     @staticmethod
     def _installGettextTranslator(locale: QLocale):
@@ -448,15 +447,8 @@ class GFApplication(QApplication):
 
         # Look for a territory-specific file first, then fall back to a
         # generic language file (e.g. 'fr_CA' then 'fr').
-        try:
-            # Qt compatibility caveats:
-            # - PyQt5 doesn't have languageToCode
-            # - PyQt6 does, but PyQt6<6.9 returns an empty string
-            genericLanguageCode = QLocale.languageToCode(locale.language())
-            if not genericLanguageCode:  # pragma: no cover - PyQt6<6.9
-                raise AttributeError("languageToCode returned empty string")
-        except AttributeError:  # pragma: no cover - Compatibility with Qt 5 and PyQt6<6.9.
-            genericLanguageCode = languageCode.split("_")[0]
+        # PyQt6<6.9 returns an empty string from languageToCode.
+        genericLanguageCode = QLocale.languageToCode(locale.language()) or languageCode.split("_")[0]
 
         for stem in languageCode, genericLanguageCode:
             languageFile = QFile(f"assets:lang/{stem}.mo")

@@ -119,7 +119,7 @@ class SidebarDelegate(QStyledItemDelegate):
         # Draw expand/collapse triangle.
         if node.mayHaveChildren() and not node.wantForceExpand():
             opt2 = QStyleOptionViewItem(option)
-            opt2.rect.adjust(-(EXPAND_TRIANGLE_WIDTH + PADDING), 0, 0, 0)  # args must be integers for pyqt5!
+            opt2.rect.adjust(-(EXPAND_TRIANGLE_WIDTH + PADDING), 0, 0, 0)  # args must be integers for PyQt6!
             opt2.rect.setWidth(EXPAND_TRIANGLE_WIDTH)
 
             # See QTreeView::drawBranches() in qtreeview.cpp for other interesting states

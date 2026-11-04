@@ -49,7 +49,7 @@ class CodeSearch(SearchProvider):
         for _wrap in range(2):  # Wrap around at most once
             newCursor = document.find(self._term, startCursor, *findFlags)
 
-            if newCursor and not newCursor.isNull():  # extra isNull check needed for PyQt5 & PyQt6
+            if newCursor and not newCursor.isNull():  # extra isNull check needed for PyQt6
                 self._buddy.setTextCursor(newCursor)
                 assert self.isCurrentMatch()
                 return

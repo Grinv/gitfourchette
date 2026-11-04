@@ -66,7 +66,6 @@ def testDiffDeletedFile(tempDir, mainWindow):
     rw.diffView.toPlainText().startswith("@@ -1,2 +0,0 @@")
 
 
-@pytest.mark.skipif(QT5, reason="Qt 5 (deprecated) is finicky with this test, but Qt 6 is fine")
 @pytest.mark.parametrize("method", ["key", "button", "mmbviewport", "mmbgutter"])
 def testDiffViewStageLines(tempDir, mainWindow, method):
     GFApplication.applyPrefs(middleClickStageLines=True)
@@ -114,7 +113,6 @@ def testDiffViewStageLines(tempDir, mainWindow, method):
     assert stagedBlob.data == b"line C\nline D\n"
 
 
-@pytest.mark.skipif(QT5, reason="Qt 5 (deprecated) is finicky with this test, but Qt 6 is fine")
 def testDiffViewStageAllLinesThenJumpToNextFile(tempDir, mainWindow):
     wd = unpackRepo(tempDir)
     writeFile(f"{wd}/aaaaa.txt", "line A\nlineB\n")
@@ -289,7 +287,6 @@ def testSubpatchNoEOL(tempDir, mainWindow):
     assert rw.repo.status() == {}
 
 
-@pytest.mark.skipif(QT5, reason="qteSelectBlocks finicky in Qt 5")
 def testSubpatchSelectUpToNextHunkHeader(tempDir, mainWindow):
     wd = unpackRepo(tempDir)
 
@@ -728,7 +725,6 @@ def testDiffContextLinesSetting(tempDir, mainWindow, withDedicatedButton):
     assert 1+8+2+8 == len(rw.diffView.toPlainText().splitlines())
 
 
-@pytest.mark.skipif(QT5, reason="Qt 5 (deprecated) is finicky with this test, but Qt 6 is fine")
 def testDiffGutterMouseInputs(tempDir, mainWindow):
     wd = unpackRepo(tempDir)
     writeFile(f"{wd}/manylines.txt", "\n".join(f"line {i}" for i in range(1, 1001)))
@@ -990,7 +986,6 @@ def testRevertHunk(tempDir, mainWindow, fromGutter):
     assert readTextFile(f"{wd}/c/c1.txt") == "c1\n"
 
 
-@pytest.mark.skipif(QT5, reason="qteSelectBlocks finicky in Qt 5")
 @pytest.mark.parametrize(
     ["commitHex", "path", "line1", "line2", "expectedResult"],
     [
@@ -1011,7 +1006,6 @@ def testRevertLineSelection(tempDir, mainWindow,
     assert readTextFile(f"{wd}/{path}") == expectedResult
 
 
-@pytest.mark.skipif(QT5, reason="qteSelectBlocks finicky in Qt 5")
 def testRevertLineSelectionDontUseTooMuchContext(tempDir, mainWindow):
     rev1 = textwrap.dedent("""\
         1

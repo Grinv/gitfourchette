@@ -492,7 +492,6 @@ def testRebaseDanglingFixup(tempDir, mainWindow):
     rebaseDialog.accept()
 
 
-@pytest.mark.skipif(QT5, reason="Qt 5 (deprecated) is finicky with this test, but Qt 6 is fine")
 def testRebaseSequenceDropIndicator(tempDir, mainWindow, monkeypatch):
     """
     Coverage test for RebaseSequenceDropIndicator's painting code.
@@ -540,8 +539,7 @@ def testRebaseSequenceDropIndicator(tempDir, mainWindow, monkeypatch):
     _rejectRebaseDialog(rebaseDialog, wasModified=False)
 
 
-@pytest.mark.skipif(QT5, reason="Qt 5 (deprecated) is finicky with this test, but Qt 6 is fine")
-@pytest.mark.skipif(QT6 and QT_BINDING_VERSION_TUPLE < (6, 7), reason="TODO: Qt 6.6?")
+@pytest.mark.skipif(QT_BINDING_VERSION_TUPLE < (6, 7), reason="TODO: Qt 6.6?")
 def testRebaseSequenceViewQDrag(tempDir, mainWindow, monkeypatch):
     """
     Coverage test for the custom QDrag in RebaseSequenceView.
