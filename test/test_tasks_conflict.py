@@ -477,6 +477,36 @@ def testMergeTool(tempDir, mainWindow):
     assert not rw.repo.index.conflicts
 
 
+def testMergeToolBacksUpWorkdirFile(tempDir, mainWindow):
+    from gitfourchette.trash import Trash
+
+    mergeToolPath = getTestDataPath("merge-shim.py")
+    scratchPath = f"{tempDir.name}/external editor scratch file.txt"
+    GFApplication.applyPrefs(externalMerge=f'"{mergeToolPath}" "{scratchPath}" $M $L $R $B')
+
+    wd = unpackRepo(tempDir, "testrepoformerging")
+    shell("git merge branch-conflicts || true", wd)
+    writeFile(f"{wd}/.gitignore", "partial resolution by hand\n")
+
+    rw = mainWindow.openRepo(wd)
+    cv = rw.conflictView
+    rw.jump(NavLocator.inUnstaged(".gitignore"), check=True)
+
+    cv.ui.mergeButton.click()
+    waitUntilTrue(cv.ui.mergeCompletePage.isVisible)
+    os.unlink(scratchPath)
+    cv.ui.confirmMergeButton.click()
+
+    assert not rw.repo.index.conflicts
+    assert readTextFile(f"{wd}/.gitignore") == "merge complete!"
+
+    trash = Trash.instance()
+    trash.refreshFiles()
+    assert len(trash.trashFiles) == 1
+    assert trash.trashFiles[0].name.endswith("---.gitignore")
+    assert trash.trashFiles[0].read_text(encoding="utf-8") == "partial resolution by hand\n"
+
+
 def testFake3WayMerge(tempDir, mainWindow):
     mergeToolPath = getTestDataPath("merge-shim.py")
     scratchPath = f"{tempDir.name}/external editor scratch file.txt"
