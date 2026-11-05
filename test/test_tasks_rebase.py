@@ -1003,3 +1003,35 @@ def testRebaseHoverAndLeftClickPill(tempDir, mainWindow, qtbot):
 
     viewport.releaseMouse()
     rebaseDialog.reject()
+
+
+@pytest.mark.parametrize("config", [
+    "rebase.abbreviateCommands=true",
+    "rebase.updateRefs=true",
+    "rebase.rebaseMerges=true",
+    "core.commentChar=;",
+    "core.commentString=//",
+])
+def testRebaseWithUserConfigAffectingTodo(tempDir, mainWindow, config):
+    onto = Oid(hex="49322bb17d3acc9146f98c97d078513228bbf3c0")
+    other = Oid(hex="ce112d052bcf42442aa8563f1e2b7a8aabbf4d17")
+    key, value = config.split("=", 1)
+
+    wd = unpackRepo(tempDir)
+    shell(f"""
+        git branch other {other}
+        git config {key} {shlex.quote(value)}
+    """, wd)
+
+    rw = mainWindow.openRepo(wd)
+    todo = [_Todo(0, RebaseOp.Reword, "reworded"), _Todo(1, RebaseOp.Edit)]
+    _driveRebaseDialog(rw, onto, todo).accept()
+
+    assert rw.repo.state() == RepositoryState.REBASE_INTERACTIVE
+    assert findTextInWidget(rw.mergeBanner.label, "stopped at")
+    rw.mergeBanner.findButton("continue rebase").click()
+
+    assert rw.repo.state() == RepositoryState.NONE
+    assert rw.repo.head_commit.parents[0].message.strip() == "reworded"
+    # We disable rebase.updateRefs, so branches inside the rebased range stay put
+    assert rw.repo.branches.local["other"].target == other

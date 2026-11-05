@@ -33,6 +33,15 @@ _AbortMagicOK = "InteractiveRebaseAbortMagicOK"
 _AbortMagicNoop = "InteractiveRebaseAbortMagicNoop"
 _AbortMagicToctou = "InteractiveRebaseAbortMagicToctou"
 
+# Override user config that changes the todo list beyond what RebaseInfo can parse.
+# Not core.commentChar: it also decides which lines git strips from reworded messages.
+_TodoConfigOverrides = (
+    "-c", "core.abbrev=no",
+    "-c", "rebase.abbreviateCommands=false",
+    "-c", "rebase.updateRefs=false",
+    "-c", "rebase.rebaseMerges=false",
+)
+
 
 class InteractiveRebase(RepoTask):
     def prereqs(self):
@@ -57,7 +66,7 @@ class InteractiveRebase(RepoTask):
         self.epilog.effects |= _StandardRebaseTaskEffects
 
         driver = yield from self.flowCallGit(
-            "-c", "core.abbrev=no",
+            *_TodoConfigOverrides,
             "rebase", "-i", str(ontoCommit),
             env={
                 "GIT_SEQUENCE_EDITOR": sequenceServer.clientCommand(),
@@ -158,7 +167,7 @@ class ExecuteRebase(RepoTask):
 
         self.epilog.effects |= _StandardRebaseTaskEffects
         driver = yield from self.flowCallGit(
-            "-c", "core.abbrev=no",
+            *_TodoConfigOverrides,
             "rebase", "-i", str(newPlan.onto),
             *extraArgs,
             env={

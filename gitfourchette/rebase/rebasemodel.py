@@ -250,12 +250,12 @@ class RebasePlan:
 
 
 def parseRebaseTodo(text: str) -> TRebaseSequence:
-    CommentMarker = "#"
     sequence: TRebaseSequence = []
     for line in text.splitlines():
         line = line.strip()
 
-        if not line or line.startswith(CommentMarker):
+        # Todo commands are lowercase words; anything else is a comment (core.commentChar may not be '#')
+        if not line or not line[0].islower():
             continue
 
         if _todoNoopPattern.match(line):
