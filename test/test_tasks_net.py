@@ -299,6 +299,25 @@ def testFetchRemoteBranch(tempDir, mainWindow):
         warnings.warn("git too old")
 
 
+def testFetchRemoteBranchSharingNameWithRemoteTag(tempDir, mainWindow):
+    oldHead = Oid(hex="c9ed7bf12c73de26422b7c5a44d74cfce5a8993b")
+    newHead = Oid(hex="6e1475206e57110fcef4b92320436c1e9872a322")
+
+    wd = unpackRepo(tempDir)
+    barePath = makeBareCopy(wd, addAsRemote="localfs", preFetch=True, deleteOtherRemotes=True)
+    shell(f"""
+        git update-ref refs/heads/master {newHead}
+        git tag master {oldHead}
+    """, barePath)
+
+    rw = mainWindow.openRepo(wd)
+    assert rw.repo.branches.remote["localfs/master"].target == oldHead
+
+    node = rw.sidebar.findNodeByRef("refs/remotes/localfs/master")
+    triggerMenuAction(rw.sidebar.makeNodeMenu(node), "fetch")
+    assert rw.repo.branches.remote["localfs/master"].target == newHead
+
+
 @pytest.mark.parametrize("pull", [False, True])
 def testFetchRemoteBranchVanishes(tempDir, mainWindow, pull):
     oldHead = Oid(hex="c9ed7bf12c73de26422b7c5a44d74cfce5a8993b")
@@ -334,7 +353,7 @@ def testFetchRemoteBranchVanishes(tempDir, mainWindow, pull):
     #     with pytest.raises(KeyError):
     #         rw.sidebar.findNodeByRef("refs/remotes/localfs/master")
 
-    acceptQMessageBox(rw, "couldn.+t find remote ref master")
+    acceptQMessageBox(rw, "couldn.+t find remote ref refs/heads/master")
     # TODO: Should we automatically prune the branch in this case?
 
 

@@ -252,7 +252,7 @@ class FetchRemoteBranch(RepoTask):
             *argsIf(GitDriver.supportsFetchPorcelain(), "--porcelain", "--verbose"),
             "--",
             remoteName,
-            remoteBranch)
+            RefPrefix.HEADS + remoteBranch)  # full refname: a tag on the remote may share the name
 
         # Old git: no --porcelain support, don't attempt to parse the ref table
         if not GitDriver.supportsFetchPorcelain():  # pragma: no cover
