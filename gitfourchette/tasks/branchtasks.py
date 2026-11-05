@@ -266,7 +266,7 @@ class NewBranchFromCommit(RepoTask):
 
         # Collect upstream names and set initial localName (if we haven't been able to set it above).
         refsPointingHere = repo.listall_refs_pointing_at(tip)
-        upstreams = []
+        upstreams: dict[str, str] = {}  # shorthand -> full refname (stable order, no duplicates)
         for r in refsPointingHere:
             prefix, shorthand = RefPrefix.split(r)
             if prefix == RefPrefix.HEADS:
@@ -274,18 +274,15 @@ class NewBranchFromCommit(RepoTask):
                     localName = shorthand
                 branch = repo.branches[shorthand]
                 if branch.upstream:
-                    upstreams.append(branch.upstream.shorthand)
+                    upstreams[branch.upstream.shorthand] = branch.upstream.name
             elif prefix == RefPrefix.REMOTES:
                 if not localName:
                     _prefix, localName = split_remote_branch_shorthand(shorthand)
-                upstreams.append(shorthand)
+                upstreams[shorthand] = r
 
         # Start with a unique name so the branch validator doesn't shout at us
         forbiddenBranchNames = repo.listall_branches(BranchType.LOCAL)
         localName = withUniqueSuffix(localName, forbiddenBranchNames)
-
-        # Ensure no duplicate upstreams (stable order since Python 3.7+)
-        upstreams = list(dict.fromkeys(upstreams))
 
         forbiddenBranchNames = repo.listall_branches(BranchType.LOCAL)
 
@@ -298,7 +295,7 @@ class NewBranchFromCommit(RepoTask):
             initialName=localName,
             target=tipHashText,
             targetSubtitle=commitMessage,
-            upstreams=upstreams,
+            upstreams=list(upstreams),
             reservedNames=forbiddenBranchNames,
             allowSwitching=not self.repo.any_conflicts,
             showSubmoduleControls=showSubmoduleControls,
@@ -329,7 +326,8 @@ class NewBranchFromCommit(RepoTask):
 
         # Optionally make it track a remote branch
         if trackUpstream:
-            yield from self.flowCallGit("branch", "-u", trackUpstream, localName)
+            # Full refname: a shorthand can be ambiguous (e.g. local branch 'origin/foo' vs. remote branch)
+            yield from self.flowCallGit("branch", "-u", upstreams[trackUpstream], localName)
 
         # Switch to it last (if user wants to)
         if switchTo:
@@ -387,7 +385,8 @@ class EditUpstreamBranch(RepoTask):
         if not remoteBranchName:
             yield from self.flowCallGit("branch", "--unset-upstream", localBranchName)
         else:
-            yield from self.flowCallGit("branch", "-u", remoteBranchName, localBranchName)
+            # Full refname: 'remote/branch' is ambiguous if a local branch has the same name
+            yield from self.flowCallGit("branch", "-u", RefPrefix.REMOTES + remoteBranchName, localBranchName)
         self.repoModel.prefs.setShadowUpstream(localBranchName, "")  # Clear any shadow upstream
 
         if remoteBranchName:

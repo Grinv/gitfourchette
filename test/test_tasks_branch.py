@@ -158,6 +158,21 @@ def testSetUpstreamBranch(tempDir, mainWindow, branchSettings: tuple[str, str]):
     assert not isCurrentBranch or isUpstreamBold()
 
 
+def testSetUpstreamBranchShadowedByLocalBranch(tempDir, mainWindow):
+    wd = unpackRepo(tempDir)
+    shell("git branch origin/no-parent", wd)  # makes 'origin/no-parent' ambiguous for git
+    rw = mainWindow.openRepo(wd)
+    repo = rw.repo
+
+    node = rw.sidebar.findNodeByRef("refs/heads/master")
+    menu = rw.sidebar.makeNodeMenu(node)
+    findMenuAction(menu, r"upstream branch/origin.no-parent").trigger()
+
+    with pytest.raises(KeyError):  # there must be no git error to reject
+        rejectQMessageBox(rw, "git.+exited")
+    assert repo.branches.local["master"].upstream_name == "refs/remotes/origin/no-parent"
+
+
 @pytest.mark.parametrize("method", ["sidebarmenu", "sidebarkey"])
 def testRenameBranch(tempDir, mainWindow, method):
     wd = unpackRepo(tempDir)
@@ -495,6 +510,22 @@ def testNewBranchTrackingRemoteBranch2(tempDir, mainWindow):
     assert localBranch
     assert localBranch.upstream_name == "refs/remotes/origin/first-merge"
     assert str(localBranch.target) == "0966a434eb1a025db6b71485ab63a3bfbea520b6"
+
+
+def testNewBranchTrackingRemoteBranchShadowedByLocalBranch(tempDir, mainWindow):
+    wd = unpackRepo(tempDir)
+    shell("git branch origin/first-merge", wd)  # makes 'origin/first-merge' ambiguous for git
+    rw = mainWindow.openRepo(wd)
+
+    node = rw.sidebar.findNodeByRef("refs/remotes/origin/first-merge")
+    triggerMenuAction(rw.sidebar.makeNodeMenu(node), "(start|new).*local branch")
+    dlg: NewBranchDialog = findQDialog(rw, "new.+branch")
+    assert dlg.ui.upstreamComboBox.currentText() == "origin/first-merge"
+    dlg.accept()
+
+    with pytest.raises(KeyError):  # there must be no git error to reject
+        rejectQMessageBox(rw, "git.+exited")
+    assert rw.repo.branches.local["first-merge"].upstream_name == "refs/remotes/origin/first-merge"
 
 
 @pytest.mark.parametrize("method", ["graphstart", "graphcheckout"])
