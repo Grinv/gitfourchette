@@ -960,12 +960,15 @@ class Repo(_VanillaRepository):
 
     @property
     def message_without_conflict_comments(self) -> str:
-        message = self.message
-        clean_message = ""
-        for line in message.splitlines(keepends=True):
-            if not line.startswith('#'):
-                clean_message += line
-        return clean_message.strip()
+        # Cut off the hints that git appends to MERGE_MSG (scissors line, "Conflicts:" block),
+        # but keep the rest verbatim: the user's own lines may start with the comment character.
+        comment = self.get_config_value("core.commentString") or self.get_config_value("core.commentChar")
+        if comment in ("", "auto"):
+            comment = "#"
+        markers = (f"{comment} Conflicts:", f"{comment} ------------------------ >8 ------------------------")
+        lines = self.message.splitlines(keepends=True)
+        end = next((i for i, line in enumerate(lines) if line.rstrip() in markers), len(lines))
+        return "".join(lines[:end]).strip()
 
     def set_message(self, message: str):
         _Path(self.path, "MERGE_MSG").write_text(message, "utf-8")

@@ -675,6 +675,39 @@ def testCherrypickWithConflicts(tempDir, mainWindow):
     assert rw.repo.head_commit.committer.name == TEST_SIGNATURE.name
 
 
+@pytest.mark.parametrize("conflict, commentChar", [(False, ""), (True, ""), (True, ";")])
+def testCherrypickKeepsHashLinesInMessage(tempDir, mainWindow, conflict, commentChar):
+    message = "Fix thing\n\n#123 was the root cause"
+    wd = unpackRepo(tempDir)
+    shell("""
+        git switch -c side
+        echo side > master.txt
+        git commit -am "Fix thing" -m "#123 was the root cause"
+        git switch -
+    """, wd)
+    if conflict:
+        shell("echo ours > master.txt && git commit -am ours", wd)
+    if commentChar:
+        shell(f"git config core.commentChar '{commentChar}'", wd)
+
+    rw = mainWindow.openRepo(wd)
+    oid = rw.repo.branches.local["side"].target
+    rw.jump(NavLocator.inCommit(oid))
+    triggerContextMenuAction(rw.graphView.viewport(), "cherry")
+    acceptQMessageBox(rw, "do you want to apply")
+    assert rw.repo.state() == RepositoryState.CHERRYPICK
+    assert ("Conflicts:" in rw.repo.message) == conflict
+    assert rw.repoModel.prefs.draftCommitMessage == message
+
+    if conflict:
+        rw.diffArea.conflictView.ui.theirsButton.click()
+        acceptQMessageBox(rw, "accept their")
+
+    rw.diffArea.commitButton.click()
+    findQDialog(rw, "commit", t=CommitDialog).accept()
+    assert rw.repo.head_commit.message.strip() == message
+
+
 def testCherrypickEditAuthor(tempDir, mainWindow):
     oid = Oid(hex='ac7e7e44c1885efb472ad54a78327d66bfc4ecef')  # "First a/a1"
 

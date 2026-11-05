@@ -643,6 +643,7 @@ class MergeBranch(RepoTask):
 
         if wantMergeCommit:
             self.repoModel.prefs.draftCommitMessage = self.repo.message_without_conflict_comments
+            self.repoModel.prefs.setDirty()
 
 
 class RecallCommit(RepoTask):
