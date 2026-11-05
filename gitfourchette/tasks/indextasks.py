@@ -356,13 +356,10 @@ class HardSolveConflicts(RepoTask):
         keepPaths = [f.path for f in files if not f.isId0()]
         nukePaths = [f.path for f in files if f.isId0()]
 
-        # Back up nuked files + THEIRS
+        # Back up all affected files. Even when keeping OURS, the workdir copy
+        # may contain conflict markers or a partial resolution by the user.
         if Trash.enabled():
-            backupList = nukePaths[:]
-            if not keepOurs:
-                backupList += keepPaths
-
-            for path in backupList:
+            for path in keepPaths + nukePaths:
                 try:
                     Trash.instance().backupFile(self.repo.workdir, path)
                 except Trash.BackupSkipped as ex:
