@@ -154,9 +154,9 @@ class RenameRemoteBranch(RepoTask):
             refspec1,
             refspec2)
 
-        new_remote_branch = repo.branches.remote[remoteName + "/" + newBranchName]
         for lb in adjustUpstreams:
-            repo.branches.local[lb].upstream = new_remote_branch
+            # Full refname: 'remote/branch' is ambiguous if a local branch has the same name
+            yield from self.flowCallGit("branch", "-u", f"{RefPrefix.REMOTES}{remoteName}/{newBranchName}", lb)
 
         self.epilog.status = _("Remote branch {0} renamed to {1}.", tquo(remoteBranchShorthand), tquo(newBranchName))
 

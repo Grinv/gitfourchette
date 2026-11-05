@@ -13,7 +13,7 @@ from gitfourchette.gitdriver import GitDriver, argsIf
 from gitfourchette.localization import *
 from gitfourchette.porcelain import GitConfigHelper
 from gitfourchette.qt import *
-from gitfourchette.tasks.repotask import RepoTask, TaskEffects
+from gitfourchette.tasks.repotask import AbortTask, RepoTask, TaskEffects
 from gitfourchette.toolbox import *
 
 
@@ -42,7 +42,8 @@ class NewRemote(RepoTask):
 
         self.epilog.effects |= TaskEffects.Refs | TaskEffects.Remotes
         yield from self.flowCallGit("remote", "add", "--", newRemoteName, newRemoteUrl)
-        self.repo.set_remote_skipfetchall(newRemoteName, newSkipFetchAll)
+        if newSkipFetchAll:
+            yield from self.flowCallGit("config", "set", "--", f"remote.{newRemoteName}.skipFetchAll", "true")
 
         self.epilog.status = _("Remote {0} added.", tquo(newRemoteName))
 
@@ -99,7 +100,15 @@ class EditRemote(RepoTask):
                 newRemoteName,
                 newRemoteUrl)
 
-        self.repo.set_remote_skipfetchall(newRemoteName, newSkipFetchAll)
+        key = f"remote.{newRemoteName}.skipFetchAll"
+        if newSkipFetchAll:
+            yield from self.flowCallGit("config", "set", "--", key, "true")
+        else:
+            driver = yield from self.flowCallGit("config", "unset", key, autoFail=False)
+            # 0: OK
+            # 5: "unset an option which does not exist" (man git-config, DESCRIPTION)
+            if driver.exitCode() not in [0, 5]:
+                raise AbortTask.fromGitError(driver)
 
         self.epilog.status = _("Remote {0} modified.", tquo(newRemoteName))
 

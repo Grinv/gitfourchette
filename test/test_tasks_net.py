@@ -214,6 +214,22 @@ def testRenameRemoteBranch(tempDir, mainWindow, method):
     assert rw.repo.branches.remote["localfs/new-name"].target == unknownCommitId
 
 
+def testRenameRemoteBranchShadowedByLocalBranch(tempDir, mainWindow):
+    wd = unpackRepo(tempDir)
+    makeBareCopy(wd, addAsRemote="localfs", preFetch=True, deleteOtherRemotes=True)
+    shell("git branch localfs/new-name", wd)  # makes 'localfs/new-name' ambiguous for git
+    rw = mainWindow.openRepo(wd)
+
+    triggerMenuAction(rw.sidebar.makeNodeMenu(rw.sidebar.findNodeByRef("refs/remotes/localfs/no-parent")), "rename")
+    dlg = findQDialog(rw, "rename")
+    dlg.findChild(QLineEdit).setText("new-name")
+    dlg.accept()
+
+    with pytest.raises(KeyError):  # there must be no git error to reject
+        rejectQMessageBox(rw, "git.+exited")
+    assert rw.repo.branches.local["no-parent"].upstream_name == "refs/remotes/localfs/new-name"
+
+
 @pytest.mark.parametrize("method", ["sidebar", "toolbar"])
 def testFetchRemote(tempDir, mainWindow, method):
     wd = unpackRepo(tempDir)

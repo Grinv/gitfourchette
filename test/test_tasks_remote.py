@@ -12,6 +12,7 @@ import pytest
 
 from gitfourchette.forms.remotedialog import RemoteDialog
 from gitfourchette.forms.reposettingsdialog import RepoSettingsDialog
+from gitfourchette.gitdriver import GitDriver
 from gitfourchette.sidebar.sidebarmodel import SidebarItem
 from .util import *
 
@@ -50,6 +51,7 @@ def testNewRemote(tempDir, mainWindow, method):
 
     dlg.ui.urlEdit.setText(barePath)
     dlg.ui.fetchAfterAddCheckBox.setChecked(True)
+    dlg.ui.skipFetchAllCheckBox.setChecked(True)
 
     # Test name validator
     for badName in ("", "origin", ".remote", "-remote"):
@@ -67,6 +69,7 @@ def testNewRemote(tempDir, mainWindow, method):
     assert rw.sidebar.countNodesByKind(SidebarItem.Remote) == 2
     assert next(n for n in rw.sidebar.findNodesByKind(SidebarItem.Remote) if n.data == "origin")
     assert next(n for n in rw.sidebar.findNodesByKind(SidebarItem.Remote) if n.data == "otherremote")
+    assert _skipFetchAllConfig(wd, "otherremote") == "true"
 
     # Ensure that fetch-after-add did work
     assert repo.branches.remote["otherremote/master"].target == repo.branches.local["master"].target
@@ -110,6 +113,47 @@ def testEditRemote(tempDir, mainWindow, method):
     assert repo.remotes[0].url == "https://127.0.0.1/example-repo.git"
     assert any("/mainremote/" in n.data for n in rw.sidebar.findNodesByKind(SidebarItem.RemoteBranch))
     assert not any("/origin/" in n.data for n in rw.sidebar.findNodesByKind(SidebarItem.RemoteBranch))
+
+
+def _skipFetchAllConfig(wd, remoteName):
+    return GitDriver.runSync("config", "--type=bool", "--default=false", "--get",
+                             f"remote.{remoteName}.skipFetchAll", directory=wd).strip()
+
+
+def _editRemote(rw, oldName, newName, skipFetchAll=None):
+    node = rw.sidebar.findNode(lambda n: n.kind == SidebarItem.Remote and n.data == oldName)
+    triggerMenuAction(rw.sidebar.makeNodeMenu(node), "edit remote")
+    dialog: RemoteDialog = findQDialog(rw, "edit remote")
+    dialog.ui.nameEdit.setText(newName)
+    if skipFetchAll is not None:
+        dialog.ui.skipFetchAllCheckBox.setChecked(skipFetchAll)
+    dialog.accept()
+
+
+def testEditRemoteSkipFetchAll(tempDir, mainWindow):
+    wd = unpackRepo(tempDir)
+    rw = mainWindow.openRepo(wd)
+
+    _editRemote(rw, "origin", "origin", True)
+    assert _skipFetchAllConfig(wd, "origin") == "true"
+
+    # Renaming the remote keeps the setting
+    _editRemote(rw, "origin", "renamed", True)
+    assert _skipFetchAllConfig(wd, "renamed") == "true"
+
+    # Unticking removes the key instead of setting it to false
+    _editRemote(rw, "renamed", "renamed", False)
+    assert GitDriver.runSync("config", "--local", "--get", "remote.renamed.skipFetchAll", directory=wd) == ""
+
+
+def testRenameRemoteKeepsGlobalSkipFetchAll(tempDir, mainWindow):
+    wd = unpackRepo(tempDir)
+    shell("git config --global remote.origin.skipFetchAll true", wd)
+    rw = mainWindow.openRepo(wd)
+
+    # 'git remote rename' only carries over the local config, so the app must write the setting
+    _editRemote(rw, "origin", "renamed")
+    assert _skipFetchAllConfig(wd, "renamed") == "true"
 
 
 @pytest.mark.parametrize("method", ["sidebarmenu", "sidebarkey"])
