@@ -20,6 +20,7 @@ from gitfourchette.qt import *
 from gitfourchette.rebase.editmsgautofillserver import EditmsgAutoFillServer
 from gitfourchette.rebase.rebasemodel import RebaseInfo, RebaseLine, RebaseOp, RebasePlan
 from gitfourchette.tasks import TaskPrereqs, TaskEffects
+from gitfourchette.tasks.committasks import readCommentString
 from gitfourchette.tasks.repotask import RepoTask, AbortTask
 from gitfourchette.toolbox import *
 
@@ -55,6 +56,7 @@ class InteractiveRebase(RepoTask):
         sequenceServer.clientConnected.connect(self.onClientConnected)
 
         self.epilog.effects |= _StandardRebaseTaskEffects
+        self.commentString = yield from readCommentString(self)
 
         driver = yield from self.flowCallGit(
             "-c", "core.abbrev=no",
@@ -85,15 +87,15 @@ class InteractiveRebase(RepoTask):
             path = handshake.args[0]
             assert Path(path).samefile(self.repo.in_gitdir("rebase-merge/git-rebase-todo"))
 
-            info = RebaseInfo.parse(self.repo.path)
+            info = RebaseInfo.parse(self.repo.path, self.commentString)
 
             if not info.todoSeq:
                 abortPayload = _AbortMagicNoop
                 return
 
-            # Verify lines with "# empty"
+            # Verify lines that git marked as empty
             for item in info.todoSeq:
-                if item.originalComment.endswith(RebaseLine.EmptyCommitSuffix):
+                if item.emptyMarker:
                     with suppress(ValueError, LookupError):
                         commit = self.repo[item.hexHash].peel(Commit)
                         if commit.tree_id == commit.parents[0].tree_id:
@@ -157,6 +159,7 @@ class ExecuteRebase(RepoTask):
         sequenceServer.clientConnected.connect(self.onClientConnected)
 
         self.epilog.effects |= _StandardRebaseTaskEffects
+        self.commentString = yield from readCommentString(self)
         driver = yield from self.flowCallGit(
             "-c", "core.abbrev=no",
             "rebase", "-i", str(newPlan.onto),
@@ -179,7 +182,7 @@ class ExecuteRebase(RepoTask):
 
             assert Path(path).samefile(self.repo.in_gitdir("rebase-merge/git-rebase-todo"))
 
-            info = RebaseInfo.parse(self.repo.path)
+            info = RebaseInfo.parse(self.repo.path, self.commentString)
             oldPlan2 = RebasePlan(info.todoSeq, headName=info.headName, origHead=info.origHead, onto=info.onto)
             if oldPlan2 != self.oldPlan:
                 abortPayload = _AbortMagicToctou

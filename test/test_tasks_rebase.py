@@ -5,6 +5,7 @@
 # -----------------------------------------------------------------------------
 
 import dataclasses
+import shlex
 import textwrap
 import warnings
 
@@ -12,7 +13,7 @@ from gitfourchette.forms.commitdialog import CommitDialog
 from gitfourchette.forms.rebasedialog import RebaseDialog
 from gitfourchette.gitdriver import GitDriver
 from gitfourchette.nav import NavLocator
-from gitfourchette.rebase.rebasemodel import RebaseOp, RebaseOpLetters
+from gitfourchette.rebase.rebasemodel import RebaseOp, RebaseOpLetters, parseRebaseTodo
 from gitfourchette.rebase.rebasesequencedelegate import RebaseSequenceDelegate
 from gitfourchette.rebase.rebasesequencedropindicator import RebaseSequenceDropIndicator
 from gitfourchette.rebase.rebasesequencemodel import RebaseSequenceModel
@@ -388,8 +389,10 @@ def testRebasePlanOutOfSync(tempDir, mainWindow):
     rejectQMessageBox(rw, "cannot apply this rebase plan")
 
 
-def testRebaseVerifyEmptyCommitsInTodo(tempDir, mainWindow):
+@pytest.mark.parametrize("commentChar", ["#", ";"])
+def testRebaseVerifyEmptyCommitsInTodo(tempDir, mainWindow, commentChar):
     wd = unpackRepo(tempDir)
+    shell(f"git config core.commentChar '{commentChar}'", wd)
     shell("""
         git commit --allow-empty -m 'some dummy commit'
 
@@ -404,7 +407,7 @@ def testRebaseVerifyEmptyCommitsInTodo(tempDir, mainWindow):
     rebaseDialog = _driveRebaseDialog(rw, onto, todo)
     seq = rebaseDialog.initialSequence
 
-    assert seq[-2].originalComment == "some dummy commit # empty"
+    assert seq[-2].originalComment == f"some dummy commit {commentChar} empty"
     assert seq[-2].displayMessage() == "some dummy commit"
     assert seq[-2].verifiedEmpty
 
@@ -1056,3 +1059,60 @@ def testRebaseHoverAndLeftClickPill(tempDir, mainWindow, qtbot):
 
     viewport.releaseMouse()
     _rejectRebaseDialog(rebaseDialog, wasModified=False)
+
+
+@pytest.mark.parametrize("config", [
+    "rebase.abbreviateCommands=true",
+    "core.commentChar=;",
+    "core.commentString=//",
+    "core.commentString=; ",  # the prefix may end with a space
+])
+def testRebaseWithUserConfigAffectingTodo(tempDir, mainWindow, config):
+    onto = Oid(hex="49322bb17d3acc9146f98c97d078513228bbf3c0")
+    key, value = config.split("=", 1)
+    wd = unpackRepo(tempDir)
+    shell(f"git config {key} {shlex.quote(value)}", wd)
+
+    rw = mainWindow.openRepo(wd)
+    todo = [_Todo(0, RebaseOp.Reword, "reworded"), _Todo(1, RebaseOp.Edit)]
+    _driveRebaseDialog(rw, onto, todo).accept()
+
+    assert rw.repo.state() == RepositoryState.REBASE_INTERACTIVE
+    assert findTextInWidget(rw.mergeBanner.label, "stopped at")
+    rw.mergeBanner.findButton("continue rebase").click()
+
+    assert rw.repo.state() == RepositoryState.NONE
+    assert rw.repo.head_commit.parents[0].message.strip() == "reworded"
+
+
+def testRebaseBannerAfterEditTodoWithAbbreviatedCommands(tempDir, mainWindow):
+    # git keeps abbreviated commands in the todo after 'git rebase --edit-todo'
+    wd = unpackRepo(tempDir)
+    shell("""
+        git config rebase.abbreviateCommands true
+        GIT_SEQUENCE_EDITOR="sed -i -e '1s/^p /e /'" git rebase -i 49322bb
+        GIT_SEQUENCE_EDITOR=true git rebase --edit-todo
+    """, wd)
+
+    rw = mainWindow.openRepo(wd)
+    assert findTextInWidget(rw.mergeBanner.label, "stopped at")
+    rw.mergeBanner.findButton("continue rebase").click()
+    assert rw.repo.state() == RepositoryState.NONE
+
+
+@pytest.mark.parametrize("line, op", [
+    ("p abc123 # Subject", RebaseOp.Pick),
+    ("f -C abc123 # amend! Subject", RebaseOp.FixupC),
+    ("d abc123 # Subject", RebaseOp.Drop),
+])
+def testParseAbbreviatedTodoCommand(line, op):
+    [parsed] = parseRebaseTodo(line)
+    assert (parsed.op, parsed.hexHash) == (op, "abc123")
+
+
+@pytest.mark.parametrize("prefix", ["; ", " #", " "])  # the prefix may start or end with a space, or be one
+def testParseTodoWithCommentPrefix(prefix):
+    # git writes an empty comment line with or without the prefix's trailing space
+    todo = f"pick abc123 # Subject\n\n{prefix} Rebase abc123 onto def456\n{prefix}\n{prefix.rstrip()}\n"
+    [parsed] = parseRebaseTodo(todo, prefix)
+    assert (parsed.op, parsed.hexHash) == (RebaseOp.Pick, "abc123")

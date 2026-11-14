@@ -12,7 +12,6 @@ import dataclasses
 import enum
 import re
 from pathlib import Path
-from typing import ClassVar
 
 from gitfourchette import colors
 from gitfourchette.porcelain import Oid, RefPrefix
@@ -122,7 +121,15 @@ class RebaseInfo:
         return ref
 
     @classmethod
-    def parse(cls, gitdir: str) -> RebaseInfo:
+    def parse(cls, gitdir: str, commentString: str = "#") -> RebaseInfo:
+        """
+        Read the state of an ongoing interactive rebase. Pass git's comment
+        prefix (committasks.readCommentString) when reading the todo that git
+        hands to the sequence editor. Once the editor is done, git drops
+        comment lines from the files it keeps, except indented ones, which
+        lose their indent. The default '#' therefore can't skip an indented
+        comment written with another prefix.
+        """
         # I attempted to expose the corresponding libgit2 functions in pygit2,
         # but libgit2 refuses to parse info about an ongoing interactive rebase.
 
@@ -153,8 +160,8 @@ class RebaseInfo:
         stoppedSha = Oid(hex=text["stopped-sha"]) if text["stopped-sha"] else ""
         msgnum = intOrZero(text["msgnum"])
         end = intOrZero(text["end"])
-        todoSeq = parseRebaseTodo(text["git-rebase-todo"])
-        doneSeq = parseRebaseTodo(text["done"])
+        todoSeq = parseRebaseTodo(text["git-rebase-todo"], commentString)
+        doneSeq = parseRebaseTodo(text["done"], commentString)
         rewritten = parseRebaseRewrittenList(text["rewritten-list"])
 
         rewriters = collections.defaultdict(list)
@@ -195,12 +202,12 @@ class RebaseInfo:
 
 @dataclasses.dataclass
 class RebaseLine:
-    EmptyCommitSuffix: ClassVar = " # empty"
-
     op: RebaseOp
     hexHash: str
     originalComment: str = ""
     payload: str = ""
+    emptyMarker: str = ""
+    """ git's "<comment prefix> empty" suffix, if originalComment ends with it. """
 
     verifiedEmpty: bool = dataclasses.field(default=False, compare=False)
     """ True if we've verified that the commit has no changes w/r/t its first
@@ -210,7 +217,7 @@ class RebaseLine:
         if not unmodified and self.op.isEditable() and self.payload:
             return self.payload
         elif self.verifiedEmpty:
-            return self.originalComment.removesuffix(RebaseLine.EmptyCommitSuffix)
+            return self.originalComment.removesuffix(self.emptyMarker)
         else:
             return self.originalComment
 
@@ -251,17 +258,24 @@ class RebasePlan:
         return RefPrefix.split(self.headName)[1]
 
 
-def parseRebaseTodo(text: str) -> TRebaseSequence:
-    CommentMarker = "#"
+def parseRebaseTodo(text: str, commentString: str = "#") -> TRebaseSequence:
     sequence: TRebaseSequence = []
+    emptySuffix = f" {commentString} empty"  # git's mark on a commit that would become empty
     for line in text.splitlines():
-        line = line.strip()
+        # git writes its comments with the prefix as is, minus trailing spaces on empty comment lines
+        if line.startswith(commentString) or line == commentString.rstrip():
+            continue
 
-        if not line or line.startswith(CommentMarker):
+        line = line.strip()
+        if not line:
             continue
 
         if _todoNoopPattern.match(line):
             continue
+
+        # rebase.abbreviateCommands: "p" for "pick", "f -C" for "fixup -C"...
+        word, space, rest = line.partition(" ")
+        line = _todoAbbreviations.get(word, word) + space + rest
 
         match = _todoLinePattern.match(line)
         if match is None:
@@ -274,7 +288,9 @@ def parseRebaseTodo(text: str) -> TRebaseSequence:
         else:
             editedMessage = ""
 
-        item = RebaseLine(RebaseOp(commandName), hexHash, comment, editedMessage)
+        emptyMarker = emptySuffix if comment.endswith(emptySuffix) else ""
+
+        item = RebaseLine(RebaseOp(commandName), hexHash, comment, editedMessage, emptyMarker)
         sequence.append(item)
     return sequence
 
@@ -292,6 +308,7 @@ def parseRebaseRewrittenList(text: str) -> dict[Oid, Oid]:
 
 
 _opsRegex = "|".join(op for op in RebaseOp if not op.startswith("_"))
+_todoAbbreviations = {letter: str(op) for op, letter in RebaseOpLetters.items()}
 _todoNoopPattern = re.compile(r"^noop\b")
 _todoLinePattern = re.compile(rf"^({_opsRegex})\s+([0-9a-f]+)(?:\s*#\s*|\s+)(.+)$")
 #                                                             ^^^^^^^^^
