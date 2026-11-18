@@ -261,7 +261,7 @@ class RebasePlan:
 def parseRebaseTodo(text: str, commentString: str = "#") -> TRebaseSequence:
     sequence: TRebaseSequence = []
     emptySuffix = f" {commentString} empty"  # git's mark on a commit that would become empty
-    for line in text.splitlines():
+    for line in text.split("\n"):  # Not splitlines(), which also breaks on U+2028 etc.
         # git writes its comments with the prefix as is, minus trailing spaces on empty comment lines
         if line.startswith(commentString) or line == commentString.rstrip():
             continue

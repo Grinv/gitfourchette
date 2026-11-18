@@ -1116,3 +1116,9 @@ def testParseTodoWithCommentPrefix(prefix):
     todo = f"pick abc123 # Subject\n\n{prefix} Rebase abc123 onto def456\n{prefix}\n{prefix.rstrip()}\n"
     [parsed] = parseRebaseTodo(todo, prefix)
     assert (parsed.op, parsed.hexHash) == (RebaseOp.Pick, "abc123")
+
+
+def testParseTodoKeepsLineSeparatorInSubject():
+    # str.splitlines() would also break the line at U+2028
+    [parsed] = parseRebaseTodo("pick abc123 # left\u2028right\n")
+    assert parsed.originalComment == "left\u2028right"
