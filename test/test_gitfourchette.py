@@ -1044,7 +1044,7 @@ def testOwnSshAgentTurnsOffWithWindowsOpenSsh(tempDir, mainWindow, monkeypatch):
 
     try:
         GFApplication.applyPrefs(ownSshAgent=True)
-        acceptQMessageBox(mainWindow, "couldn.t start ssh-agent.+OpenSSH for Windows")
+        acceptQMessageBox(mainWindow, "core.sshCommand.+built-in OpenSSH.+Set-Service ssh-agent")
     finally:
         del globalConfig["core.sshCommand"]
 

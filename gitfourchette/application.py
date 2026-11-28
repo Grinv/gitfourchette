@@ -674,7 +674,7 @@ class GFApplication(QApplication):
     def applySshAgentPref(self):
         from gitfourchette import settings
         from gitfourchette.sshagent import SshAgent, WindowsOpenSshError
-        from gitfourchette.toolbox import showWarning, paragraphs
+        from gitfourchette.toolbox import bquo, paragraphs, showWarning
 
         wantAgent = settings.prefs.ownSshAgent
         sandbox = settings.prefs.isGitSandboxed()
@@ -698,11 +698,18 @@ class GFApplication(QApplication):
             settings.prefs.ownSshAgent = False
             settings.prefs.setDirty()
 
+            key = bquo("core.sshCommand")
+            app = qAppName()
+            pwsh = "<pre>Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent</pre>"
             message = paragraphs(
-                _("Couldn’t start {0}.", "ssh-agent"),
-                _("Your {0} setting makes Git use OpenSSH for Windows, which can’t use GitFourchette’s ssh-agent. "
-                  "Please use the ssh-agent service that comes with Windows instead.", "core.sshCommand"),
-                _("GitFourchette’s own ssh-agent is now turned off."))
+                _("In your Git configuration, {key} points to Windows’s built-in OpenSSH. "
+                  "It’s incompatible with {app}’s own ssh-agent.", key=key, app=app),
+                _("If you want to remember passphrases via {app}’s own ssh-agent, "
+                  "please unset {key} from your Git configuration "
+                  "(this will use Git Bash’s ssh command instead of Windows’s).", key=key, app=app),
+                _("Alternatively, you can use Windows’s ssh-agent service to remember passphrases. "
+                  "To do so, open PowerShell as administrator, then run:<br>{pwsh}", pwsh=pwsh),
+                _("In the meantime, {app}’s own ssh-agent is now turned off.", app=app))
             showWarning(self.mainWindow, _("SSH agent"), message)
         except Exception as exc:
             message = paragraphs(
